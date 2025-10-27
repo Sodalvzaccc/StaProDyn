@@ -12,3 +12,13 @@
 | MMIM | https://github.com/declare-lab/Multimodal-Infomax |
 | BBFN | https://github.com/declare-lab/multimodal-deep-learning |
 | KuDA | https://github.com/MKMaS-GUET/KuDA |
+
+## Datasets
+
+CH-SIMS / CMU-MOSI / CMU-MOSEI can be downloaded from [MMSA](https://github.com/thuiar/MMSA).
+CH-SIMSv2 can be downloaded from ch-sims-v2 (Supervised).
+
+## Pretrained Language Modal
+
+* **CH-SIMS / CH-SIMSv2:** bert-base-chinese(https://huggingface.co/google-bert/bert-base-chinese).
+* **CMU-MOSI / CMU-MOSEI:** bert-base-uncased(https://huggingface.co/google-bert/bert-base-uncased).
