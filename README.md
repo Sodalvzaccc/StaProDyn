@@ -20,5 +20,5 @@ CH-SIMSv2 can be downloaded from ch-sims-v2 (Supervised).
 
 ## Pretrained Language Modal
 
-* **CH-SIMS / CH-SIMSv2:** bert-base-chinese(https://huggingface.co/google-bert/bert-base-chinese).
-* **CMU-MOSI / CMU-MOSEI:** bert-base-uncased(https://huggingface.co/google-bert/bert-base-uncased).
+* **CH-SIMS / CH-SIMSv2:** [bert-base-chinese](https://huggingface.co/google-bert/bert-base-chinese).
+* **CMU-MOSI / CMU-MOSEI:** [bert-base-uncased](https://huggingface.co/google-bert/bert-base-uncased).
