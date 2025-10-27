@@ -16,7 +16,7 @@
 ## Datasets
 
 CH-SIMS / CMU-MOSI / CMU-MOSEI can be downloaded from [MMSA](https://github.com/thuiar/MMSA).
-CH-SIMSv2 can be downloaded from ch-sims-v2 (Supervised).
+CH-SIMSv2 can be downloaded from [ch-sims-v2 (Supervised)](https://github.com/thuiar/ch-sims-v2).
 
 ## Pretrained Language Modal
 
