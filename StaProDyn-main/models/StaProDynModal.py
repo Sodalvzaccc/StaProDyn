@@ -18,13 +18,13 @@ class StaProDyn(nn.Module):
 
         # Multimodal Fusion
         self.DAF = DynamicAttentionAllocation(opt)
-        self.d_l = 256
+        self.d_t = 256
         self.d_a = 256
         self.d_v = 256
 
         # Output Classification for Sentiment Analysis
         self.CLS = SentiCLS(opt)
-        self.orig_d_l = 1536
+        self.orig_d_t = 1536
         self.orig_d_a = 256
         self.orig_d_v = 256
         self.layers = opt.nlevels
@@ -57,7 +57,7 @@ class StaProDyn(nn.Module):
             llen=self.llen,
             alen=self.alen,
             vlen=self.vlen,
-            orig_d_l=self.orig_d_l,
+            orig_d_t=self.orig_d_t,
             orig_d_a=self.orig_d_a,
             orig_d_v=self.orig_d_v,
             d_l=self.d_l,
@@ -66,17 +66,17 @@ class StaProDyn(nn.Module):
         )
 
         # 2. Crossmodal Attentions
-        self.trans_l_with_a = self.get_network(self_type="la")
-        self.trans_l_with_v = self.get_network(self_type="lv")
+        self.trans_t_with_a = self.get_network(self_type="la")
+        self.trans_t_with_v = self.get_network(self_type="lv")
 
-        self.trans_a_with_l = self.get_network(self_type="al")
+        self.trans_a_with_t = self.get_network(self_type="al")
         self.trans_a_with_v = self.get_network(self_type="av")
 
-        self.trans_v_with_l = self.get_network(self_type="vl")
+        self.trans_v_with_t = self.get_network(self_type="vl")
         self.trans_v_with_a = self.get_network(self_type="va")
 
         # 3. Self Attentions (Could be replaced by LSTMs, GRUs, etc.)
-        self.trans_l_mem = self.get_network(self_type="l_mem", layers=3)
+        self.trans_t_mem = self.get_network(self_type="l_mem", layers=3)
         self.trans_a_mem = self.get_network(self_type="a_mem", layers=3)
         self.trans_v_mem = self.get_network(self_type="v_mem", layers=3)
 
@@ -84,24 +84,27 @@ class StaProDyn(nn.Module):
         self.proj1 = nn.Linear(combined_dim, combined_dim)
         self.proj2 = nn.Linear(combined_dim, combined_dim)
 
-        self.xx_l_linear = nn.Linear(256, 1536)
-        self.xx_l_norm = nn.LayerNorm(1536)
+        self.xx_t_linear = nn.Linear(256, 1536)
+        self.xx_t_norm = nn.LayerNorm(1536)
 
-    def get_network(self, self_type="l", layers=-1):
-        if self_type in ["l", "al", "vl"]:
-            embed_dim, attn_dropout = self.d_l, self.attn_dropout
-        elif self_type in ["a", "la", "va"]:
-            embed_dim, attn_dropout = self.d_a, self.attn_dropout_a
-        elif self_type in ["v", "lv", "av"]:
-            embed_dim, attn_dropout = self.d_v, self.attn_dropout_v
-        elif self_type == "l_mem":
-            embed_dim, attn_dropout = 2 * self.d_l, self.attn_dropout
-        elif self_type == "a_mem":
-            embed_dim, attn_dropout = 2 * self.d_a, self.attn_dropout
-        elif self_type == "v_mem":
-            embed_dim, attn_dropout = 2 * self.d_v, self.attn_dropout
-        else:
-            raise ValueError("Unknown network type")
+    def get_network(self, self_type="t", layers=-1):
+        config_map = {
+            "t": (self.d_t, self.attn_dropout),
+            "a": (self.d_a, self.attn_dropout_a),
+            "v": (self.d_v, self.attn_dropout_v),
+            "t_mem": (2 * self.d_t, self.attn_dropout),
+            "a_mem": (2 * self.d_a, self.attn_dropout),
+            "v_mem": (2 * self.d_v, self.attn_dropout),
+        }
+
+
+        config = config_map.get(self_type)
+
+        if config is None:
+            # 使用 f-string 改进了错误消息
+            raise ValueError(f"Unknown network type: {self_type}")
+
+        embed_dim, attn_dropout = config
 
         return TransformerEncoder(
             embed_dim=embed_dim,
@@ -114,32 +117,31 @@ class StaProDyn(nn.Module):
             attn_mask=self.attn_mask,
         )
 
-    def get_complete_data(self, x_l, x_a, x_v, weak_mode):
-        return self.prompt.get_complete_data(x_l, x_a, x_v, weak_mode)
+    def get_complete_data(self, x_t, x_a, x_v, weak_mode):
+        return self.prompt.get_complete_data(x_t, x_a, x_v, weak_mode)
 
 
     def forward(self, inputs_data_mask, multi_senti, weak, epoch: int = None, opt: object = None):
-        # Unimodal Encoder & Knowledge Inject // Unimodal Sentiment Prediction
         uni_fea, uni_senti = self.UniEncKI(inputs_data_mask)  # [T, V, A]
         uni_mask = inputs_data_mask['mask']
 
         if (epoch is not None) and (opt is not None) and self.training:
             weak = self.saf.select_weak(uni_senti, weak, epoch, opt, training=True)
 
-        xx_l, xx_a, xx_v = None, None, None
+        xx_t, xx_a, xx_v = None, None, None
 
         proj_x_a = xx_a.permute(0, 2, 1)
         proj_x_v = xx_v.permute(0, 2, 1)
-        proj_x_l = xx_l.permute(0, 2, 1)
+        proj_x_t = xx_t.permute(0, 2, 1)
 
-        proj_x_l = self.xx_l_linear(proj_x_l)
-        proj_x_l = self.xx_l_norm(proj_x_l)
+        proj_x_t = self.xx_l_linear(proj_x_t)
+        proj_x_t = self.xx_l_norm(proj_x_t)
 
         mask_t = (weak == 0)
         mask_a = (weak == 1)
         mask_v = (weak == 2)
         if mask_t.any():
-            uni_fea['T'][mask_t] = proj_x_l[mask_t]
+            uni_fea['T'][mask_t] = proj_x_t[mask_t]
         if mask_a.any():
             uni_fea['A'][mask_a] = proj_x_a[mask_a]
         if mask_v.any():
@@ -154,7 +156,7 @@ class StaProDyn(nn.Module):
         multimodal_features, nce_loss = self.DAF(uni_fea, uni_mask, senti_ratio)
 
         # Sentiment Classification
-        prediction = self.CLS(multimodal_features)  # uni_fea['T'], uni_fea['V'], uni_fea['A']
+        prediction = self.CLS(multimodal_features)
 
         return prediction, nce_loss
 
