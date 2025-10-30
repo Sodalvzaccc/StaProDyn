@@ -116,46 +116,6 @@ class PromptLearner(nn.Module):
 
         return x_l, x_a, x_v
 
-    def get_proj_matrix(self):
-        a_v_l = (
-            self.audio_prompt_nm @ self.map_audio
-            + self.vision_prompt_nm @ self.map_vision
-            + self.text_prompt_nm @ self.map_text
-        ).unsqueeze(0)
-        am_v_l = (
-            self.audio_prompt_m @ self.map_audio
-            + self.vision_prompt_nm @ self.map_vision
-            + self.text_prompt_nm @ self.map_text
-        ).unsqueeze(0)
-        a_vm_l = (
-            self.audio_prompt_nm @ self.map_audio
-            + self.vision_prompt_m @ self.map_vision
-            + self.text_prompt_nm @ self.map_text
-        ).unsqueeze(0)
-        a_v_lm = (
-            self.audio_prompt_nm @ self.map_audio
-            + self.vision_prompt_nm @ self.map_vision
-            + self.text_prompt_m @ self.map_text
-        ).unsqueeze(0)
-        am_vm_l = (
-            self.audio_prompt_m @ self.map_audio
-            + self.vision_prompt_m @ self.map_vision
-            + self.text_prompt_nm @ self.map_text
-        ).unsqueeze(0)
-        am_v_lm = (
-            self.audio_prompt_m @ self.map_audio
-            + self.vision_prompt_nm @ self.map_vision
-            + self.text_prompt_m @ self.map_text
-        ).unsqueeze(0)
-        a_vm_lm = (
-            self.audio_prompt_nm @ self.map_audio
-            + self.vision_prompt_m @ self.map_vision
-            + self.text_prompt_m @ self.map_text
-        ).unsqueeze(0)
-        self.mp = torch.cat(
-            [a_v_lm, am_v_l, a_vm_l, am_v_lm, a_vm_lm, am_vm_l, a_v_l], dim=0
-        )
-        return self.mp
 
     def compute_batch_prompt(self, weak: torch.Tensor) -> torch.Tensor:
         mp = getattr(self, 'mp', None)
@@ -172,5 +132,6 @@ class PromptLearner(nn.Module):
 
         batch_prompt = batch_prompt.transpose(0, 1)
         return batch_prompt
+
 
 
