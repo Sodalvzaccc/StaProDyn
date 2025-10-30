@@ -121,14 +121,26 @@ class StaProDyn(nn.Module):
         return self.prompt.get_complete_data(x_t, x_a, x_v, weak_mode)
 
 
-    def forward(self, inputs_data_mask, multi_senti, weak, epoch: int = None, opt: object = None):
+    def forward(self, inputs_data_mask, multi_senti, weak_mode, epoch: int = None, opt: object = None):
         uni_fea, uni_senti = self.UniEncKI(inputs_data_mask)  # [T, V, A]
         uni_mask = inputs_data_mask['mask']
 
         if (epoch is not None) and (opt is not None) and self.training:
-            weak = self.saf.select_weak(uni_senti, weak, epoch, opt, training=True)
+           weak_mode = self.saf.select_weak(uni_senti, weak_mode, epoch, opt, training=True)
 
         xx_t, xx_a, xx_v = None, None, None
+        for idx in range(len(x_l)):
+            x_l_temp, x_a_temp, x_v_temp = self.get_complete_data(
+                x_l[idx], x_a[idx], x_v[idx], weak_mode[idx]
+            )
+            if xx_l is None:
+                xx_l = x_l_temp
+                xx_a = x_a_temp
+                xx_v = x_v_temp
+            else:
+                xx_l = torch.cat([xx_l, x_l_temp], dim=0)
+                xx_a = torch.cat([xx_a, x_a_temp], dim=0)
+                xx_v = torch.cat([xx_v, x_v_temp], dim=0)
 
         proj_x_a = xx_a.permute(0, 2, 1)
         proj_x_v = xx_v.permute(0, 2, 1)
