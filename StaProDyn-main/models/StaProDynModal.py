@@ -124,6 +124,9 @@ class StaProDyn(nn.Module):
     def forward(self, inputs_data_mask, multi_senti, weak_mode, epoch: int = None, opt: object = None):
         uni_fea, uni_senti = self.UniEncKI(inputs_data_mask)  # [T, V, A]
         uni_mask = inputs_data_mask['mask']
+        x_l = uni_fea['T']
+        x_a = uni_fea['A']  
+        x_v = uni_fea['V']  
 
         if (epoch is not None) and (opt is not None) and self.training:
            weak_mode = self.saf.select_weak(uni_senti, weak_mode, epoch, opt, training=True)
@@ -149,15 +152,9 @@ class StaProDyn(nn.Module):
         proj_x_t = self.xx_l_linear(proj_x_t)
         proj_x_t = self.xx_l_norm(proj_x_t)
 
-        mask_t = (weak == 0)
-        mask_a = (weak == 1)
-        mask_v = (weak == 2)
-        if mask_t.any():
-            uni_fea['T'][mask_t] = proj_x_t[mask_t]
-        if mask_a.any():
-            uni_fea['A'][mask_a] = proj_x_a[mask_a]
-        if mask_v.any():
-            uni_fea['V'][mask_v] = proj_x_v[mask_v]
+        uni_fea['T'] = proj_x_l  
+        uni_fea['A'] = proj_x_a  
+        uni_fea['V'] = proj_x_v  
 
 
         if multi_senti is not None:
